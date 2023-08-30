@@ -1,0 +1,74 @@
+---
+title: "Proyecto 1 - Negocios"
+author: "Hector Pichardo"
+date: "2023-08-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Cargamos los paquetes
+```{r paquetes y librerias}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+```
+#Cargamos la data y exploramos
+```{r}
+ruta <- "/Users/hectorrafaelpo/Desktop/Maestria en Estadisticas/Trimestre 8/Análisis Predictivo de Negocios/Proyecto 1/BankChurners.csv"
+BC <- read_csv(ruta, col_types = cols(.default = "c"))
+options(stringsAsFactors = FALSE)
+
+str(BC)
+BC <- BC %>%
+  mutate(
+    CLIENTNUM = as.factor(CLIENTNUM),
+    Attrition_Flag = as.factor(Attrition_Flag),
+    Gender = as.factor(Gender),
+    Education_Level = as.factor(Education_Level),
+    Marital_Status = as.factor(Marital_Status),
+    Income_Category = as.factor(Income_Category),
+    Card_Category = as.factor(Card_Category)
+  )
+summary(BC)
+```
+#Visualizaciones
+```{r grafico 1}
+# Gráfico de barras para la distribución de género
+ggplot(BC, aes(x = Gender)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribución de Género")
+```
+```{rgrafico 2}
+# Gráfico de barras para la distribución de estado civil
+ggplot(BC, aes(x = Marital_Status)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribución de Estado Civil")
+```
+```{rgrafico 3}
+# Histograma de edades
+ggplot(BC, aes(x = Customer_Age)) +
+  geom_histogram(binwidth = 5, fill = "steelblue") +
+  labs(title = "Histograma de Edades")
+```
+```{r grafico 4}
+# Gráfico de dispersión
+ggplot(BC, aes(x = Total_Trans_Amt, y = Total_Revolving_Bal)) +
+  geom_point(color = "steelblue") +
+  labs(title = "Total Transaction Amount vs Total Revolving Balance")
+
+```
+
+
+```{r modelos de regresión}
+
+model <- lm(Avg_Utilization_Ratio ~ Gender + Marital_Status + Income_Category +Total_Trans_Amt + Total_Revolving_Bal, data = BC)
+
+# Resumen del modelo
+summary(model)
+```
