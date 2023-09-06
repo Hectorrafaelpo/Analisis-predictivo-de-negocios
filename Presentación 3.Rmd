@@ -1,0 +1,151 @@
+---
+title: "Presentaación 3"
+author: "Hector Pichardo - Endel Figuereo"
+date: "2023-09-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Cargamos los paquetes
+```{r paquetes y librerias}
+# Instala y carga las bibliotecas
+# install.packages("rpart")
+#install.packages("randomForest")
+#install.packages("xgboost")
+#install.packages("htmltools")
+#install.packages("adabag")
+
+library(rpart)
+library(randomForest)
+library(xgboost)
+library(adabag)
+
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(caTools)
+
+
+```
+#Cargamos la data y exploramos
+```{r}
+ruta <- "/Users/hectorrafaelpo/Desktop/Maestria en Estadisticas/Trimestre 8/Análisis Predictivo de Negocios/Proyecto 1/BankChurners.csv"
+BC <- read_csv(ruta, col_types = cols(.default = "c"))
+options(stringsAsFactors = FALSE)
+
+str(BC)
+BC <- BC %>%
+  mutate(
+    CLIENTNUM = as.factor(CLIENTNUM),
+    Attrition_Flag = as.factor(Attrition_Flag),
+    Gender = as.factor(Gender),
+    Education_Level = as.factor(Education_Level),
+    Marital_Status = as.factor(Marital_Status),
+    Income_Category = as.factor(Income_Category),
+    Card_Category = as.factor(Card_Category),
+    Months_on_book = as.numeric(Months_on_book),
+    Total_Relationship_Count = as.numeric(Total_Relationship_Count),
+    Months_Inactive_12_mon = as.numeric(Months_Inactive_12_mon),
+    Contacts_Count_12_mon = as.numeric(Contacts_Count_12_mon),
+    Credit_Limit = as.numeric(Credit_Limit),
+    Total_Revolving_Bal = as.numeric(Total_Revolving_Bal),
+    Avg_Open_To_Buy = as.numeric(Avg_Open_To_Buy),
+    Total_Amt_Chng_Q4_Q1 = as.numeric(Total_Amt_Chng_Q4_Q1),
+    Total_Trans_Amt = as.numeric(Total_Trans_Amt),
+    Total_Trans_Ct = as.numeric(Total_Trans_Ct),
+    Total_Ct_Chng_Q4_Q1 = as.numeric(Total_Ct_Chng_Q4_Q1 ),
+    Avg_Utilization_Ratio = as.numeric(Avg_Utilization_Ratio),
+    Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1 = as.numeric(Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1),
+    Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2 = as.numeric(Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2)
+    
+  )
+summary(BC)
+
+```
+
+```{r Preparación de la data}
+
+# Establece una semilla para la reproducibilidad
+set.seed(13)
+
+# Proporción de datos de entrenamiento
+proporcion_entrenamiento <- 0.7
+
+# Divide los datos en conjuntos de entrenamiento y prueba
+indices <- sample.split(BC$Avg_Utilization_Ratio, SplitRatio = proporcion_entrenamiento)
+
+# Crea el conjunto de entrenamiento
+conjunto_entrenamiento <- BC[indices, ]
+
+# Crea el conjunto de prueba
+conjunto_prueba <- BC[!indices, ]
+
+# Verifica el tamaño de los conjuntos
+nrow(conjunto_entrenamiento)  # Número de filas en el conjunto de entrenamiento
+nrow(conjunto_prueba)        # Número de filas en el conjunto de prueba
+```
+
+#Arbol de decision
+```{r Arbol de decision }
+# Entrenar un árbol de decisión
+modelo_arbol <- rpart(Avg_Utilization_Ratio ~ Gender + Marital_Status + Income_Category + Total_Trans_Amt + Total_Revolving_Bal, data = conjunto_entrenamiento)
+
+# Calcular el RMSE para cada modelo
+rmse_arbol <- sqrt(mean((predict(modelo_arbol, newdata = conjunto_prueba) - conjunto_prueba$Avg_Utilization_Ratio)^2))
+cat("RMSE Árbol de Decisión:", rmse_arbol, "\n")
+
+# Calcular el R^2 para cada modelo
+r2_arbol <- 1 - sum((predict(modelo_arbol, newdata = conjunto_prueba) - conjunto_prueba$Avg_Utilization_Ratio)^2) / sum((conjunto_prueba$Avg_Utilization_Ratio - mean(conjunto_prueba$Avg_Utilization_Ratio))^2)
+cat("R^2 Árbol de Decisión:", r2_arbol, "\n")
+
+
+# Puedes ajustar los hiperparámetros según sea necesario
+# Por ejemplo, para limitar la profundidad del árbol:
+# modelo_arbol <- rpart(Avg_Utilization_Ratio ~ Gender + Marital_Status + Income_Category + Total_Trans_Amt + Total_Revolving_Bal, data = conjunto_entrenamiento, maxdepth = 5)
+```
+
+#Modelo de Random Forest
+```{r Random Forest}
+
+# Entrenar un modelo Random Forest
+modelo_rf <- randomForest(Avg_Utilization_Ratio ~ Gender + Marital_Status + Income_Category + Total_Trans_Amt + Total_Revolving_Bal, data = conjunto_entrenamiento)
+
+# Calcular el RMSE para cada modelo
+rmse_rf <- sqrt(mean((predict(modelo_rf, newdata = conjunto_prueba) - conjunto_prueba$Avg_Utilization_Ratio)^2))
+
+
+# Imprimir los resultados
+cat("RMSE Random Forest:", rmse_rf, "\n")
+
+# Calcular el R^2 para cada modelo
+r2_rf <- 1 - sum((predict(modelo_rf, newdata = conjunto_prueba) - conjunto_prueba$Avg_Utilization_Ratio)^2) / sum((conjunto_prueba$Avg_Utilization_Ratio - mean(conjunto_prueba$Avg_Utilization_Ratio))^2)
+
+cat("R^2 Random Forest:", r2_rf, "\n")
+
+
+# Puedes ajustar los hiperparámetros aquí también, como el número de árboles (ntree) y otros parámetros de randomForest
+```
+
+
+
+En función de las métricas obtenidas hasta ahora:
+
+Árbol de Decisión:
+RMSE: 0.1897987
+R^2: 0.5139993
+
+Random Forest:
+RMSE: 0.1882043
+R^2: 0.5221303
+
+Modelo Lineal (Regresión Lineal Múltiple):
+RMSE: 0.1893 (valor proporcionado previamente)
+R^2: 0.5284 (valor proporcionado previamente)
+
+A simple vista, el modelo que muestra el menor RMSE (Root Mean Square Error) y el mayor R^2 es el modelo lineal. Esto sugiere que, en términos de ajuste de los datos y capacidad de explicar la variabilidad en la variable objetivo, el modelo lineal supera ligeramente a los otros dos modelos.
+
+En resumen, el modelo lineal parece ser el mejor según las métricas proporcionadas, pero se recomienda realizar una evaluación más completa antes de tomar una decisión definitiva.
